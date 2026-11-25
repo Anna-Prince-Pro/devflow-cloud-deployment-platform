@@ -21,6 +21,7 @@ import { projectsApi } from '../api/projects';
 import { deploymentsApi } from '../api/deployments';
 import { Project, ProjectCreate } from '../types/project';
 import { Deployment, DeploymentCreate } from '../types/deployment';
+import { formatDate, formatDateTime, formatTime, parseUtcDate } from '../utils/date';
 import {
   ResponsiveContainer,
   PieChart,
@@ -118,7 +119,7 @@ export const Dashboard: React.FC = () => {
   // Recent deployments (latest 5)
   const recentDeployments = useMemo(() => {
     return [...deployments]
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .sort((a, b) => (parseUtcDate(b.created_at)?.getTime() ?? 0) - (parseUtcDate(a.created_at)?.getTime() ?? 0))
       .slice(0, 5);
   }, [deployments]);
 
@@ -409,7 +410,7 @@ export const Dashboard: React.FC = () => {
                             <span className="font-mono text-cyan-400/90 font-medium">
                               {projectDeployments.length} deployments
                             </span>
-                            <span>{new Date(p.created_at).toLocaleDateString()}</span>
+                            <span>{formatDate(p.created_at)}</span>
                           </div>
                         </Link>
                       );
@@ -491,10 +492,9 @@ export const Dashboard: React.FC = () => {
                               <StatusBadge status={dep.status} />
                             </td>
                             <td className="py-3 pr-2 text-right text-slate-400">
-                              {new Date(dep.created_at).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
+                              <span title={formatDateTime(dep.created_at)}>
+                                {formatTime(dep.created_at)}
+                              </span>
                             </td>
                           </tr>
                         );

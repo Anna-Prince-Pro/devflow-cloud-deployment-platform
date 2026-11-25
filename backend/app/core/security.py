@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict
 
 from jose import JWTError, jwt
@@ -12,7 +12,7 @@ def create_access_token(data: Dict[str, Any], expires_delta: timedelta | None = 
     ``expires_delta`` optional; defaults to ``settings.ACCESS_TOKEN_EXPIRE_MINUTES`` minutes.
     """
     to_encode = data.copy()
-    expire = datetime.utcnow() + (
+    expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     to_encode.update({"exp": expire})

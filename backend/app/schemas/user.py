@@ -5,6 +5,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from app.core.datetime_utils import ensure_utc_datetime
+
 
 class UserBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -25,6 +27,11 @@ class UserRead(UserBase):
     @classmethod
     def coerce_uuid(cls, v):
         return str(v) if v is not None else v
+
+    @field_validator("created_at", mode="before")
+    @classmethod
+    def validate_utc_datetime(cls, v):
+        return ensure_utc_datetime(v)
 
 
 class UserLogin(BaseModel):

@@ -7,6 +7,7 @@ from sqlalchemy import Column, String, DateTime, ForeignKey, Index
 from enum import Enum
 from sqlalchemy.orm import relationship
 
+from app.core.datetime_utils import utc_now
 from app.models.base import Base, GUID, new_uuid
 
 class DeploymentStatus(str, Enum):
@@ -24,7 +25,7 @@ class Deployment(Base):
     status = Column(String(50), default=DeploymentStatus.PENDING.value, nullable=False)
     commit_sha = Column(String(40), nullable=True)
     environment = Column(String(100), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     project = relationship("Project", back_populates="deployments")

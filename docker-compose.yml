@@ -1,22 +1,88 @@
-version: "3.9"
-
 services:
-  postgres:
+  # ---------------------------------------------------------------------------
+  # Database Service — PostgreSQL 15
+  # ---------------------------------------------------------------------------
+  db:
     image: postgres:15-alpine
     container_name: devflow-postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: devflow_db
-      POSTGRES_USER: devflow_user
-      POSTGRES_PASSWORD: devflow_password
+      POSTGRES_DB: ${POSTGRES_DB:-devflow_db}
+      POSTGRES_USER: ${POSTGRES_USER:-devflow_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devflow_password}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U devflow_user -d devflow_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-devflow_user} -d ${POSTGRES_DB:-devflow_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 5s
+    networks:
+      - devflow-network
+
+  # ---------------------------------------------------------------------------
+  # Backend Service — FastAPI & Uvicorn (Python 3.12)
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: devflow-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-devflow_user}:${POSTGRES_PASSWORD:-devflow_password}@db:5432/${POSTGRES_DB:-devflow_db}
+      SECRET_KEY: ${SECRET_KEY:-replace-with-a-long-random-secret-key}
+      APP_NAME: ${APP_NAME:-DevFlow API}
+      APP_ENV: ${APP_ENV:-development}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000}
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - devflow-network
+
+  # ---------------------------------------------------------------------------
+  # Frontend Service — React 18 + Vite (Served via Nginx)
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
+    container_name: devflow-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - devflow-network
 
 volumes:
   postgres_data:
+    name: devflow-cloud-deployment-platform_postgres_data
+
+networks:
+  devflow-network:
+    name: devflow-network
+    driver: bridge

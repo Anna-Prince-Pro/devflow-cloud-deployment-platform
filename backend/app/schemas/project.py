@@ -5,6 +5,8 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.core.datetime_utils import ensure_utc_datetime
+
 
 class ProjectBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -32,6 +34,11 @@ class ProjectRead(ProjectBase):
     @classmethod
     def coerce_uuid(cls, v):
         return str(v) if v is not None else v
+
+    @field_validator("created_at", "updated_at", mode="before")
+    @classmethod
+    def validate_utc_datetime(cls, v):
+        return ensure_utc_datetime(v)
 
 
 class ProjectUpdate(BaseModel):

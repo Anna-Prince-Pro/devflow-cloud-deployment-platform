@@ -1,0 +1,30 @@
+# Python virtual environment
+.venv/
+venv/
+env/
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+test*.db
+test_devflow.db*
+
+# Local environment & secrets
+.env
+.env.*
+secrets/
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode/
+.idea/

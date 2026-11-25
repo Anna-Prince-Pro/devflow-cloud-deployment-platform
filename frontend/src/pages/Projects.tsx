@@ -22,6 +22,7 @@ import { projectsApi } from '../api/projects';
 import { deploymentsApi } from '../api/deployments';
 import { Project, ProjectCreate, ProjectUpdate } from '../types/project';
 import { Deployment } from '../types/deployment';
+import { formatDate } from '../utils/date';
 
 export const Projects: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -301,7 +302,7 @@ export const Projects: React.FC = () => {
                   <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
                     <div className="flex items-center gap-1 text-[11px]">
                       <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{new Date(project.created_at).toLocaleDateString()}</span>
+                      <span>{formatDate(project.created_at)}</span>
                     </div>
 
                     <div className="flex items-center gap-2">

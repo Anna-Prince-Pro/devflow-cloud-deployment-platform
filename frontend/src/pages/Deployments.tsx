@@ -20,6 +20,7 @@ import { deploymentsApi } from '../api/deployments';
 import { projectsApi } from '../api/projects';
 import { Project } from '../types/project';
 import { Deployment, DeploymentCreate, DeploymentStatus, ALLOWED_TRANSITIONS } from '../types/deployment';
+import { formatDateTime } from '../utils/date';
 
 export const Deployments: React.FC = () => {
   const [deployments, setDeployments] = useState<Deployment[]>([]);
@@ -342,18 +343,16 @@ export const Deployments: React.FC = () => {
 
                         {/* Updated */}
                         <td className="py-3 text-slate-400 text-[11px]">
-                          {new Date(dep.updated_at).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                          <span title={formatDateTime(dep.updated_at)}>
+                            {formatDateTime(dep.updated_at)}
+                          </span>
                         </td>
 
                         {/* Created */}
                         <td className="py-3 pr-4 text-right text-slate-400 text-[11px]">
-                          {new Date(dep.created_at).toLocaleDateString([], {
-                            month: 'short',
-                            day: 'numeric',
-                          })}
+                          <span title={formatDateTime(dep.created_at)}>
+                            {formatDateTime(dep.created_at)}
+                          </span>
                         </td>
                       </tr>
                     );

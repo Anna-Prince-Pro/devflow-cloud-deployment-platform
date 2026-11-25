@@ -14,6 +14,7 @@ import {
 import { Header } from '../components/layout/Header';
 import { Button } from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
+import { formatDate } from '../utils/date';
 
 export const Settings: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -88,7 +89,7 @@ export const Settings: React.FC = () => {
                 Member Since
               </span>
               <p className="text-sm text-slate-200">
-                {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'Active Session'}
+                {user?.created_at ? formatDate(user.created_at) : 'Active Session'}
               </p>
             </div>
           </div>

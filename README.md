@@ -1,300 +1,222 @@
 # DevFlow — Cloud-Native Deployment Management Platform
 
-![Status](https://img.shields.io/badge/status-Foundation%20%7C%20Backend%20%7C%20Frontend%20Implemented-brightgreen)
+![Status](https://img.shields.io/badge/status-Containerized%20%7C%20CI%2FCD%20Ready-brightgreen)
+![Docker](https://img.shields.io/badge/Docker-Compose%20v2-2496ED)
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688)
 ![React](https://img.shields.io/badge/React-18-61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178C6)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791)
+![Nginx](https://img.shields.io/badge/Nginx-1.27-009639)
+![CI/CD](https://img.shields.io/badge/GitHub%20Actions-Passing-2088FF)
 
 ---
 
 ## 📋 Project Overview
 
-**DevFlow** is a cloud-native deployment management platform that gives development teams a centralized dashboard to manage, monitor, and control application deployments across AWS infrastructure.
+**DevFlow** is a modern, full-stack, cloud-native deployment management platform that gives software engineering teams a unified dashboard to trigger, monitor, and manage multi-environment application releases.
 
-The platform automates the deployment pipeline from code commit to production, offering real-time visibility into deployment health, rollback capabilities, and infrastructure cost tracking — all from a single interface.
-
-This project is built as a professional portfolio piece, developed incrementally across structured development sessions to demonstrate full-stack, cloud, and DevOps engineering skills.
+DevFlow bridges the gap between source control commits and infrastructure operations, providing real-time deployment status transitions (`pending` → `running` → `succeeded` / `failed`), user ownership isolation, health monitoring, and auditability.
 
 ---
 
-## ❗ Problem Statement
+## 🏗️ Architecture & Container Orchestration
 
-Modern software teams face several deployment challenges:
-
-- **Fragmented tooling** — teams juggle multiple dashboards: AWS Console, CI/CD logs, container registries, and monitoring tools with no unified view.
-- **Deployment anxiety** — no easy way to compare what is running in production vs staging vs development at a glance.
-- **Slow incident response** — identifying a bad deployment and triggering a rollback requires navigating multiple systems under pressure.
-- **Infrastructure opacity** — developers rarely know the cost or resource impact of what they deploy.
-
-DevFlow addresses these problems with a single, developer-friendly interface backed by automated infrastructure management.
-
----
-
-## 🏗️ Architecture
+DevFlow is fully containerized and orchestrated via Docker Compose with dedicated health checks and isolated networking.
 
 ```mermaid
 graph TD
-    Browser["🌐 Browser"] -->|HTTP| FE["⚛️ React Frontend\nVite + TypeScript\nlocalhost:5173"]
-    FE -->|REST API /api/v1| BE["🐍 FastAPI Backend\nPython 3.12 + Uvicorn\nlocalhost:8000"]
-    BE -->|SQLAlchemy ORM| DB["🐘 PostgreSQL 15\nDocker Compose\nlocalhost:5432"]
-    BE -->|Alembic| MIG["📦 Database Migrations"]
+    Client["🌐 User Browser\n(http://localhost:5173)"]
+
+    subgraph DockerNetwork["🐳 Docker Bridge Network: devflow-network"]
+        FE["📦 Frontend Container: devflow-frontend\nNginx 1.27 Alpine\nPort 80 -> Host 5173\n- Static SPA Hosting\n- Reverse Proxy: /api/ -> backend:8000"]
+        BE["📦 Backend Container: devflow-backend\nPython 3.12-slim + FastAPI + Uvicorn\nPort 8000 -> Host 8000\n- Auto Alembic Migrations\n- JWT Authentication & RBAC"]
+        DB["📦 Database Container: devflow-postgres\nPostgreSQL 15 Alpine\nPort 5432 -> Host 5432\n- pg_isready Healthcheck"]
+        VOL[("💾 Persistent Docker Volume:\ndevflow-cloud-deployment-platform_postgres_data")]
+    end
+
+    Client -->|HTTP / SPA Navigation| FE
+    Client -->|Direct REST API / JWT| BE
+    FE -->|Proxy Pass /api/| BE
+    BE -->|SQLAlchemy / TCP 5432| DB
+    DB --- VOL
 ```
 
 ---
 
 ## 🛠️ Technology Stack
 
-### Frontend
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| React | 18 | UI component framework |
-| TypeScript | 5 | Type-safe JavaScript |
-| Vite | 5 | Fast build tooling |
-| Tailwind CSS | 3 | Utility-first dark-theme styling |
-| TanStack Query | 5 | Server state management |
-| React Router | 6 | Client-side routing |
+### Frontend Service
+- **Framework**: React 18 with TypeScript 5
+- **Tooling**: Vite 6, Tailwind CSS 3 (Dark Slate Theme), Lucide Icons
+- **State & Data**: TanStack Query v5, Axios, Recharts
+- **Production Server**: Nginx 1.27 Alpine with Gzip compression, HTTP security headers, and reverse proxy fallback
 
-### Backend
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| Python | 3.12 | Primary language |
-| FastAPI | 0.115 | Async REST API framework |
-| SQLAlchemy | 2.0 | ORM / database abstraction |
-| Alembic | 1.14 | Database migrations |
-| Pydantic | 2.10 | Data validation and serialization |
-| Uvicorn | 0.32 | ASGI production server |
-| Ruff | 0.8 | Linter and formatter |
-| pytest | 8.3 | Test framework |
+### Backend Service
+- **Framework**: FastAPI 0.115 with Python 3.12
+- **ORM & Migrations**: SQLAlchemy 2.0 with Alembic 1.14
+- **Security**: JWT authentication (`python-jose`), bcrypt password hashing (`passlib`)
+- **Validation**: Pydantic v2 schemas with strict status transitions
+- **ASGI Server**: Uvicorn with automated startup migration entrypoint
 
-### Database
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| PostgreSQL | 15 | Primary relational database (Docker Compose locally, RDS in production) |
+### Database & Storage
+- **Engine**: PostgreSQL 15 (Alpine)
+- **Persistence**: Dedicated Docker named volume (`devflow-cloud-deployment-platform_postgres_data`)
 
-### DevOps (Planned)
-| Technology | Purpose |
-|------------|---------|
-| Docker / Docker Compose | Containerization and local orchestration |
-| AWS ECS (Fargate) | Container hosting |
-| AWS RDS | Managed PostgreSQL |
-| AWS ALB | Load balancing |
-| Terraform | Infrastructure-as-code |
-| GitHub Actions | CI/CD automation |
-| CloudWatch | Monitoring and alerting |
+### CI/CD & DevOps
+- **Containerization**: Multi-stage Docker builds (`Dockerfile` + `.dockerignore`)
+- **Orchestration**: Docker Compose with container healthchecks and dependency ordering
+- **CI Pipeline**: GitHub Actions (`.github/workflows/ci.yml`) validating backend pytest suite, frontend TypeScript/build, and Docker Compose specification
 
 ---
 
-## 📁 Project Structure
+## 🚀 Quick Start with Docker Compose
 
-```
-devflow-cloud-deployment-platform/
-├── backend/
-│   ├── app/
-│   │   ├── __init__.py
-│   │   ├── main.py                  # FastAPI app entrypoint
-│   │   ├── core/
-│   │   │   ├── __init__.py
-│   │   │   └── config.py            # Pydantic Settings
-│   │   ├── api/
-│   │   │   ├── __init__.py
-│   │   │   └── v1/
-│   │   │       ├── __init__.py
-│   │   │       ├── router.py        # Aggregates all routers
-│   │   │       └── endpoints/
-│   │   │           ├── __init__.py
-│   │   │           ├── health.py    # /health and /ready
-│   │   │           ├── projects.py  # CRUD for projects
-│   │   │           └── deployments.py # Read-only deployments
-│   │   ├── models/
-│   │   │   ├── __init__.py
-│   │   │   ├── base.py              # Declarative base
-│   │   │   ├── user.py              # User model
-│   │   │   ├── project.py           # Project model
-│   │   │   └── deployment.py        # Deployment model
-│   │   ├── schemas/
-│   │   │   ├── __init__.py
-│   │   │   ├── project.py           # ProjectCreate / ProjectRead / ProjectList
-│   │   │   └── deployment.py        # DeploymentRead / DeploymentList
-│   │   ├── services/
-│   │   │   ├── __init__.py
-│   │   │   ├── project_service.py
-│   │   │   └── deployment_service.py
-│   │   └── database/
-│   │       ├── __init__.py
-│   │       └── session.py           # Engine, SessionLocal, get_db
-│   ├── migrations/                  # Alembic migrations
-│   ├── tests/
-│   │   ├── __init__.py
-│   │   ├── conftest.py              # SQLite in-memory fixtures
-│   │   ├── test_health.py
-│   │   ├── test_projects.py
-│   │   └── test_deployments.py
-│   └── requirements.txt
-├── frontend/
-│   ├── src/
-│   │   ├── api/                     # TanStack Query hooks
-│   │   ├── components/              # Shared UI components
-│   │   ├── pages/                   # Route-level page components
-│   │   └── main.tsx                 # App entrypoint
-│   ├── public/
-│   ├── index.html
-│   ├── package.json
-│   ├── tailwind.config.js
-│   ├── tsconfig.json
-│   └── vite.config.ts
-├── infrastructure/
-│   ├── terraform/                   # AWS IaC (planned)
-│   └── scripts/                     # Deployment utilities
-├── docs/
-│   └── architecture.md              # Detailed architecture docs
-├── .github/
-│   └── workflows/                   # GitHub Actions CI/CD (planned)
-├── docker-compose.yml               # Local PostgreSQL via Docker
-├── .env.example                     # Configuration template (safe to commit)
-├── .gitignore
-└── README.md
-```
+Ensure Docker and Docker Compose are installed and running.
 
----
-
-## ✅ Prerequisites
-
-| Requirement | Version | Notes |
-|-------------|---------|-------|
-| Python | 3.12+ | `python --version` |
-| Node.js | 20+ | `node --version` |
-| Docker Desktop | Latest | Required for PostgreSQL |
-| Git | Any | `git --version` |
-
----
-
-## 🚀 Local Development Setup
-
+### 1. Clone & Configure Environment
 ```bash
-# 1. Clone
-git clone https://github.com/Anna-Prince-Pro/devflow-cloud-deployment-platform.git
+git clone https://github.com/DevG-26/devflow-cloud-deployment-platform.git
 cd devflow-cloud-deployment-platform
 
-# 2. Environment
+# Copy the example environment file
 cp .env.example .env
-# Edit .env — set a real SECRET_KEY
-
-# 3. Start PostgreSQL
-docker compose up -d postgres
-
-# 4. Backend
-cd backend
-python -m venv .venv
-# Windows:
-.venv\Scripts\activate
-# macOS/Linux:
-source .venv/bin/activate
-pip install -r requirements.txt
-
-# 5. Run migrations
-alembic upgrade head
-
-# 6. Start FastAPI
-uvicorn app.main:app --reload --port 8000
-
-# 7. Frontend (new terminal)
-cd frontend
-npm install
-npm run dev
 ```
 
-The API will be available at **http://localhost:8000** (Swagger UI: http://localhost:8000/docs)  
-The frontend will be available at **http://localhost:5173**
+### 2. Build and Start All Services
+```bash
+docker compose up -d --build
+```
+
+### 3. Verify Container Health
+```bash
+docker compose ps
+```
+All three containers (`devflow-postgres`, `devflow-backend`, `devflow-frontend`) should report `healthy`.
+
+### 4. Access the Application
+- **Frontend Dashboard**: [http://localhost:5173](http://localhost:5173)
+- **FastAPI Backend Root**: [http://localhost:8000](http://localhost:8000)
+- **Interactive OpenAPI Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **API Health Check**: [http://localhost:8000/health](http://localhost:8000/health)
+- **Database Readiness**: [http://localhost:8000/ready](http://localhost:8000/ready)
+
+---
+
+## 🐳 Docker Management Reference
+
+| Command | Description |
+|---------|-------------|
+| `docker compose up -d` | Start all services in background |
+| `docker compose up -d --build` | Rebuild images and restart containers |
+| `docker compose ps` | Check running container status and health |
+| `docker compose logs -f backend` | Stream backend server and migration logs |
+| `docker compose logs -f frontend` | Stream Nginx access and error logs |
+| `docker compose logs -f db` | Stream PostgreSQL database logs |
+| `docker compose restart backend` | Restart backend container |
+| `docker compose down` | Stop containers without removing persistent data |
+| `docker compose down -v` | Stop containers and wipe database volume |
 
 ---
 
 ## ⚙️ Environment Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://devflow_user:password@localhost:5432/devflow_db` |
-| `SECRET_KEY` | App secret key (JWT signing) | Long random string |
-| `APP_NAME` | Application display name | `DevFlow` |
-| `APP_ENV` | Runtime environment | `development` |
-| `ALLOWED_ORIGINS` | CORS allowed origins (JSON array) | `["http://localhost:5173"]` |
-| `GITHUB_CLIENT_ID` | GitHub OAuth app client ID | From GitHub Developer Settings |
-| `GITHUB_CLIENT_SECRET` | GitHub OAuth app client secret | From GitHub Developer Settings |
-| `GITHUB_WEBHOOK_SECRET` | Secret for validating webhook payloads | Random string |
-| `VITE_APP_API_URL` | Frontend API base URL | `http://localhost:8000` |
+Configuration is loaded from `.env` at the project root:
+
+| Variable | Description | Default / Example |
+|----------|-------------|-------------------|
+| `POSTGRES_USER` | PostgreSQL superuser name | `devflow` |
+| `POSTGRES_PASSWORD` | PostgreSQL password | `devflow` |
+| `POSTGRES_DB` | PostgreSQL database name | `devflow` |
+| `DATABASE_URL` | SQLAlchemy connection URL | `postgresql://devflow:devflow@db:5432/devflow` |
+| `SECRET_KEY` | JWT signing secret key | Long random secret string |
+| `APP_NAME` | Application title in OpenAPI | `DevFlow API` |
+| `APP_ENV` | Application environment (`development` / `production`) | `development` |
+| `APP_PORT` | Backend host port binding | `8000` |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | JWT token lifespan in minutes | `30` |
+| `ALLOWED_ORIGINS` | CORS origins (comma-separated or JSON list) | `http://localhost:5173,http://127.0.0.1:5173` |
+| `VITE_API_BASE_URL` | Frontend target API endpoint | `http://localhost:8000/api/v1` |
+| `DEVFLOW_TEST_DATABASE_URL` | Isolated database URL for running pytest | `sqlite:///./test_devflow.db` |
 
 ---
 
 ## 📡 API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/` | Root — returns API name and version |
-| `GET` | `/api/v1/health` | Health check |
-| `GET` | `/api/v1/ready` | Readiness check (verifies DB connection) |
-| `GET` | `/api/v1/projects` | List all projects |
-| `POST` | `/api/v1/projects` | Create a new project |
-| `GET` | `/api/v1/projects/{id}` | Get a project by ID |
-| `GET` | `/api/v1/deployments` | List all deployments |
-| `GET` | `/api/v1/deployments/{id}` | Get a deployment by ID |
+### Health & Monitoring
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/health` | None | Returns `{ "status": "ok" }` |
+| `GET` | `/ready` | None | Probes DB and returns `{ "database": "ready" }` |
 
-Full interactive docs available at **http://localhost:8000/docs** when running locally.
+### Authentication
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/api/v1/users/register` | None | Register account (`name`, `email`, `password`) |
+| `POST` | `/api/v1/users/login` | None | Authenticate and obtain JWT Bearer token |
+
+### Projects
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/v1/projects/` | Bearer JWT | List projects owned by authenticated user |
+| `POST` | `/api/v1/projects/` | Bearer JWT | Create project (`name`, `description`, `repo_url`) |
+| `GET` | `/api/v1/projects/{id}` | Bearer JWT | Retrieve project by ID (ownership enforced) |
+| `PUT` | `/api/v1/projects/{id}` | Bearer JWT | Update project details |
+| `DELETE` | `/api/v1/projects/{id}` | Bearer JWT | Delete project and cascade deployments |
+
+### Deployments
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/v1/deployments/` | Bearer JWT | List all deployments for user's projects |
+| `POST` | `/api/v1/deployments/` | Bearer JWT | Create deployment record (`project_id`, `environment`, `commit_sha`) |
+| `GET` | `/api/v1/deployments/{id}` | Bearer JWT | Retrieve deployment details by ID |
+| `GET` | `/api/v1/deployments/project/{project_id}` | Bearer JWT | List deployments for a specific project |
+| `PATCH` | `/api/v1/deployments/{id}/status` | Bearer JWT | Transition deployment status (`pending` → `running` → `succeeded` / `failed`) |
 
 ---
 
-## 🧪 Testing
+## 🧪 Automated Testing
 
+### Backend Test Suite (Pytest)
+The backend includes 23 automated tests verifying user registration, authentication, project CRUD, deployment lifecycle, status transitions, and cross-user ownership isolation.
 ```bash
-# Backend tests (from repo root)
+# Run tests against an isolated SQLite test database
+$env:DEVFLOW_TEST_DATABASE_URL="sqlite:///./test_devflow.db"
 cd backend
-.venv\Scripts\pytest tests/ -v        # Windows
-# or
-.venv/bin/pytest tests/ -v            # macOS/Linux
+python -m pytest tests -v
+```
 
-# Frontend tests
+### Frontend Verification
+```bash
 cd frontend
-npm test
-
-# Backend linting
-cd backend
-.venv\Scripts\ruff check app/         # Windows
-# or
-.venv/bin/ruff check app/             # macOS/Linux
+# TypeScript check
+npx tsc --noEmit
+# Production bundle build
+npm run build
 ```
 
 ---
 
-## 📊 Implementation Status
+## 🔄 CI/CD Pipeline (GitHub Actions)
 
-| Feature | Status |
-|---------|--------|
-| Project structure and Git repository | ✅ Complete |
-| FastAPI backend with health, projects, deployments endpoints | ✅ Complete |
-| SQLAlchemy models (User, Project, Deployment) | ✅ Complete |
-| Alembic migration configuration | ✅ Complete |
-| Pydantic request/response schemas | ✅ Complete |
-| React + TypeScript frontend | ✅ Complete |
-| Tailwind CSS dark theme | ✅ Complete |
-| React Router navigation | ✅ Complete |
-| TanStack Query API integration | ✅ Complete |
-| Project registration form | ✅ Complete |
-| Backend test suite (pytest) | ✅ Complete |
-| Frontend test suite (Vitest) | ✅ Complete |
-| Alembic migration run (requires Docker + PostgreSQL) | 🔜 Pending Docker |
-| GitHub OAuth authentication | 📋 Planned |
-| Docker image builds | 📋 Planned |
-| AWS ECS deployment | 📋 Planned |
-| Terraform infrastructure | 📋 Planned |
-| GitHub Actions CI/CD | 📋 Planned |
-| Deployment monitoring (CloudWatch) | 📋 Planned |
-| Rollback support | 📋 Planned |
+Located at `.github/workflows/ci.yml`, the pipeline runs automatically on every `push` and `pull_request` targeting `main`:
+1. **Backend Checks**: Sets up Python 3.12, installs dependencies, and runs the 23-test pytest suite using an isolated SQLite database.
+2. **Frontend Checks**: Sets up Node.js 20, runs `npm ci`, verifies TypeScript types (`tsc --noEmit`), and executes `vite build`.
+3. **Docker Validation**: Validates the Docker Compose file (`docker compose config`) and performs Buildx test builds of both container images.
+
+---
+
+## 📊 Implementation Roadmap
+
+| Milestone | Status | Details |
+|-----------|--------|---------|
+| **Day 1: Foundation** | ✅ Complete | FastAPI setup, PostgreSQL connection, SQLAlchemy base models, Alembic migrations |
+| **Day 2: Core Backend** | ✅ Complete | JWT auth, Project/Deployment CRUD, ownership enforcement, 23 automated tests |
+| **Day 3: Frontend SPA** | ✅ Complete | React 18, TypeScript, Tailwind dark theme, TanStack Query, Recharts metrics |
+| **Day 4: Containerization & CI/CD** | ✅ Complete | Backend & Frontend Dockerfiles, Docker Compose stack, healthchecks, GitHub Actions |
+| **Day 5: Cloud Deployment** | 📋 Planned | AWS ECS Fargate, RDS PostgreSQL, ALB, and Terraform IaC |
 
 ---
 
 ## 📄 License
 
-This project is for educational and portfolio purposes.
-
----
-
-*Last updated: Sprint 2 — Foundation + Backend + Frontend implemented*
+This project is open-source under the MIT License for educational and portfolio demonstration.

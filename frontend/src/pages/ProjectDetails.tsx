@@ -22,6 +22,7 @@ import { projectsApi } from '../api/projects';
 import { deploymentsApi } from '../api/deployments';
 import { Project, ProjectUpdate } from '../types/project';
 import { Deployment, DeploymentCreate, DeploymentStatus, ALLOWED_TRANSITIONS } from '../types/deployment';
+import { formatDate, formatDateTime } from '../utils/date';
 
 export const ProjectDetails: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -224,7 +225,7 @@ export const ProjectDetails: React.FC = () => {
                       )}
                       <span className="flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                        Created: {new Date(project.created_at).toLocaleDateString()}
+                        Created: {formatDate(project.created_at)}
                       </span>
                       <span className="font-mono text-slate-400">
                         ID: <span className="text-slate-300">{project.id.slice(0, 8)}</span>
@@ -348,12 +349,9 @@ export const ProjectDetails: React.FC = () => {
                               )}
                             </td>
                             <td className="py-3.5 pr-2 text-right text-slate-400">
-                              {new Date(dep.created_at).toLocaleString([], {
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
+                              <span title={formatDateTime(dep.created_at)}>
+                                {formatDateTime(dep.created_at)}
+                              </span>
                             </td>
                           </tr>
                         );

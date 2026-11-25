@@ -7,6 +7,8 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.core.datetime_utils import ensure_utc_datetime
+
 # Allowed deployment statuses
 ALLOWED_STATUSES = {"pending", "running", "failed", "succeeded"}
 
@@ -54,3 +56,8 @@ class DeploymentRead(DeploymentBase):
     @classmethod
     def coerce_uuid(cls, v):
         return str(v) if v is not None else v
+
+    @field_validator("created_at", "updated_at", mode="before")
+    @classmethod
+    def validate_utc_datetime(cls, v):
+        return ensure_utc_datetime(v)
